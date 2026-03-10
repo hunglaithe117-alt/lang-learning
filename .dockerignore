@@ -1,6 +1,35 @@
-.vscode/
+# Dependencies
 node_modules/
-npm-debug.log
+
+# Build outputs
 dist/
-graphql/
+build/
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+npm-debug.log
+*.log
+
+# Test
 test/
+coverage/
+
+# Turbo
+.turbo/
+
+# Python
+__pycache__/
+.venv/
+*.pyc
+
+# Git
+.git/
+.github/
+.gitignore
+
+# Environment
+.env
+.env.local

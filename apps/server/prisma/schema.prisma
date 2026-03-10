@@ -1,0 +1,177 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+generator dbml {
+  provider = "prisma-dbml-generator"
+}
+
+// ================================
+// Auth & User
+// ================================
+
+model User {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  email     String   @unique
+  password  String
+  firstname String?
+  lastname  String?
+  role      Role
+
+  posts      Post[]
+  notebooks  Notebook[]
+  flashcards Flashcard[]
+  exercises  Exercise[]
+  attempts   ExerciseAttempt[]
+}
+
+model Post {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  published Boolean
+  title     String
+  content   String?
+  author    User?    @relation(fields: [authorId], references: [id])
+  authorId  String?
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+// ================================
+// Document & Notebook
+// ================================
+
+model Notebook {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  title       String
+  description String?
+  language    Language @default(ENGLISH)
+
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documents Document[]
+}
+
+model Document {
+  id           String   @id @default(cuid())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  filename     String
+  originalName String
+  mimeType     String
+  size         Int
+  content      String?
+  language     Language @default(ENGLISH)
+  isProcessed  Boolean  @default(false)
+  chunksCount  Int      @default(0)
+
+  notebookId String
+  notebook   Notebook     @relation(fields: [notebookId], references: [id], onDelete: Cascade)
+  vocabulary Vocabulary[]
+  exercises  Exercise[]
+  flashcards Flashcard[]
+}
+
+enum Language {
+  ENGLISH
+  CHINESE
+}
+
+// ================================
+// Learning Content
+// ================================
+
+model Vocabulary {
+  id            String     @id @default(cuid())
+  createdAt     DateTime   @default(now())
+  term          String
+  definition    String
+  pronunciation String?
+  partOfSpeech  String?
+  difficulty    Difficulty @default(BEGINNER)
+  examples      String[]
+  language      Language   @default(ENGLISH)
+
+  documentId String?
+  document   Document?   @relation(fields: [documentId], references: [id], onDelete: SetNull)
+  flashcards Flashcard[]
+}
+
+model Flashcard {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  front     String
+  back      String
+
+  // SRS (Spaced Repetition) fields
+  easeFactor  Float    @default(2.5)
+  interval    Int      @default(0)
+  repetitions Int      @default(0)
+  nextReview  DateTime @default(now())
+
+  vocabularyId String?
+  vocabulary   Vocabulary? @relation(fields: [vocabularyId], references: [id], onDelete: SetNull)
+  documentId   String?
+  document     Document?   @relation(fields: [documentId], references: [id], onDelete: SetNull)
+  userId       String
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Exercise {
+  id          String       @id @default(cuid())
+  createdAt   DateTime     @default(now())
+  type        ExerciseType
+  question    String
+  options     Json?
+  answer      String
+  explanation String?
+  difficulty  Difficulty   @default(BEGINNER)
+
+  documentId String?
+  document   Document?         @relation(fields: [documentId], references: [id], onDelete: SetNull)
+  userId     String
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  attempts   ExerciseAttempt[]
+}
+
+model ExerciseAttempt {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  answer    String
+  isCorrect Boolean
+
+  exerciseId String
+  exercise   Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum Difficulty {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum ExerciseType {
+  MULTIPLE_CHOICE
+  FILL_IN_BLANK
+  MATCHING
+  TRANSLATION
+  READING_COMPREHENSION
+  SENTENCE_ORDERING
+}
